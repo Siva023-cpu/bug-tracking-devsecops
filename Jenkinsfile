@@ -3,9 +3,9 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Checkout Source Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Siva023-cpu/bug-tracking-devsecops.git'
+                checkout scm
             }
         }
 
@@ -26,14 +26,40 @@ pipeline {
             }
         }
 
+        stage('Code Quality Check (Flake8)') {
+            steps {
+                sh '''
+                . venv/bin/activate
+                flake8 app.py models.py || true
+                '''
+            }
+        }
+
+        stage('Static Security Scan (Bandit)') {
+            steps {
+                sh '''
+                . venv/bin/activate
+                bandit -r app.py models.py || true
+                '''
+            }
+        }
+
+        stage('Dependency Vulnerability Scan') {
+            steps {
+                sh '''
+                . venv/bin/activate
+                pip-audit || true
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ CI Pipeline completed successfully'
+            echo '✅ DevSecOps CI Pipeline executed successfully'
         }
         failure {
-            echo '❌ CI Pipeline failed'
+            echo '❌ DevSecOps CI Pipeline failed'
         }
     }
 }
