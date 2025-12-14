@@ -5,7 +5,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'master', url: 'https://github.com/Siva023-cpu/bug-tracking-devsecops.git'
+                git branch: 'main', url: 'https://github.com/Siva023-cpu/bug-tracking-devsecops.git'
             }
         }
 
