@@ -11,25 +11,26 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                bat 'python --version'
+                sh 'python3 --version || python --version'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                bat '''
-                python -m venv venv
-                venv\\Scripts\\activate
+                sh '''
+                python3 -m venv venv
+                . venv/bin/activate
                 pip install --upgrade pip
-                pip install flask flask_sqlalchemy werkzeug
+                pip install -r requirements.txt
                 '''
             }
         }
+
     }
 
     post {
         success {
-            echo '✅ CI Pipeline executed successfully'
+            echo '✅ CI Pipeline completed successfully'
         }
         failure {
             echo '❌ CI Pipeline failed'
