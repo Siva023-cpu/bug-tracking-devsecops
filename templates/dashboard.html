@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Bug Dashboard</h3>
+
+<a href="/add-bug" class="btn btn-danger mb-3">➕ Report Bug</a>
+
+<table class="table table-striped table-bordered shadow-sm">
+  <thead class="table-dark">
+    <tr>
+      <th>Title</th>
+      <th>Severity</th>
+      <th>Status</th>
+      <th>Reported By</th>
+      <th>Update</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for bug in bugs %}
+    <tr>
+      <td>{{ bug.title }}</td>
+      <td>
+        <span class="badge bg-warning text-dark">{{ bug.severity }}</span>
+      </td>
+      <td>{{ bug.status }}</td>
+      <td>{{ bug.reported_by }}</td>
+      <td>
+        <td>
+            {% if session.get('is_admin') %}
+            <form method="post" action="/update-status/{{ bug.id }}">
+                <select name="status" class="form-select form-select-sm mb-1">
+                 <option>Open</option>
+                 <option>In Progress</option>
+                 <option>Resolved</option>
+                 <option>Closed</option>
+                </select>
+                 <button class="btn btn-sm btn-success w-100">Update</button>
+            </form>
+        {% else %}
+            <span class="text-muted">Admin only</span>
+        {% endif %}
+        </td>
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
