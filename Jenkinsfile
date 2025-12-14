@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "bugtracker-devsecops"
+    }
+
     stages {
 
         stage('Checkout Source Code') {
@@ -11,7 +15,7 @@ pipeline {
 
         stage('Check Python Version') {
             steps {
-                sh 'python3 --version || python --version'
+                sh 'python3 --version'
             }
         }
 
@@ -52,14 +56,32 @@ pipeline {
                 '''
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                docker build -t $IMAGE_NAME .
+                '''
+            }
+        }
+
+        stage('Docker Run (Test Container)') {
+            steps {
+                sh '''
+                docker stop bugtracker || true
+                docker rm bugtracker || true
+                docker run -d -p 5000:5000 --name bugtracker $IMAGE_NAME
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ DevSecOps CI Pipeline executed successfully'
+            echo "✅ DevSecOps CI/CD with Docker completed successfully"
         }
         failure {
-            echo '❌ DevSecOps CI Pipeline failed'
+            echo "❌ Pipeline failed"
         }
     }
 }
