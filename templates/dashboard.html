@@ -2,10 +2,61 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
+
 <h3 class="mb-3">Bug Dashboard</h3>
 
-<a href="/add-bug" class="btn btn-danger mb-3">➕ Report Bug</a>
+<a href="{{ url_for('add_bug') }}" class="btn btn-danger mb-3">
+  ➕ Report Bug
+</a>
 
+<!-- DASHBOARD CARDS -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card text-white bg-primary shadow">
+      <div class="card-body text-center">
+        <h5>Total Bugs</h5>
+        <h2>{{ total }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card text-white bg-warning shadow">
+      <div class="card-body text-center">
+        <h5>Open Bugs</h5>
+        <h2>{{ open_bugs }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card text-white bg-success shadow">
+      <div class="card-body text-center">
+        <h5>Resolved</h5>
+        <h2>{{ resolved }}</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<form method="get" class="mb-3">
+  <div class="input-group">
+    <input
+      type="text"
+      name="search"
+      class="form-control"
+      placeholder="Search bugs by title..."
+      value="{{ search }}"
+    >
+    <button class="btn btn-outline-primary">Search</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+      Clear
+    </a>
+  </div>
+</form>
+
+<!-- BUG TABLE -->
 <table class="table table-striped table-bordered shadow-sm">
   <thead class="table-dark">
     <tr>
@@ -17,34 +68,98 @@
     </tr>
   </thead>
   <tbody>
-    {% for bug in bugs %}
-    <tr>
-      <td>{{ bug.title }}</td>
-      <td>
-        <span class="badge bg-warning text-dark">{{ bug.severity }}</span>
-      </td>
-      <td>{{ bug.status }}</td>
-      <td>{{ bug.reported_by }}</td>
-      <td>
+    {% if bugs %}
+      {% for bug in bugs %}
+      <tr {% if request.args.get('updated') == bug.id|string %}class="status-updated"{% endif %}>
         <td>
-            {% if session.get('is_admin') %}
-            <form method="post" action="/update-status/{{ bug.id }}">
-                <select name="status" class="form-select form-select-sm mb-1">
-                 <option>Open</option>
-                 <option>In Progress</option>
-                 <option>Resolved</option>
-                 <option>Closed</option>
-                </select>
-                 <button class="btn btn-sm btn-success w-100">Update</button>
-            </form>
+          <a href="{{ url_for('bug_detail', bug_id=bug.id) }}">
+            {{ bug.title }}
+          </a>
+        </td>
+        <td>
+        {% if bug.severity == 'High' %}
+          <span class="badge bg-danger badge-status">High</span>
+        {% elif bug.severity == 'Medium' %}
+         <span class="badge bg-warning text-dark badge-status">Medium</span>
         {% else %}
-            <span class="text-muted">Admin only</span>
+          <span class="badge bg-success badge-status">Low</span>
         {% endif %}
         </td>
 
-    </tr>
-    {% endfor %}
+        <td>
+          {% if bug.status == 'Resolved' %}
+            <span class="badge bg-success badge-status">Resolved</span>
+          {% elif bug.status == 'In Progress' %}
+            <span class="badge bg-info badge-status">In Progress</span>
+          {% elif bug.status == 'Closed' %}
+            <span class="badge bg-secondary badge-status">Closed</span>
+          {% else %}
+            <span class="badge bg-warning badge-status">Open</span>
+          {% endif %}
+        </td>
+        <td>{{ bug.reported_by }}</td>
+        <td>
+          {% if session.get('is_admin') %}
+            <form method="post" action="{{ url_for('update_status', bug_id=bug.id) }}">
+              <select name="status" class="form-select form-select-sm mb-1">
+                <option value="Open" {% if bug.status == 'Open' %}selected{% endif %}>Open</option>
+                <option value="In Progress" {% if bug.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Resolved" {% if bug.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+               <option value="Closed" {% if bug.status == 'Closed' %}selected{% endif %}>Closed</option>
+              </select>
+              <button class="btn btn-sm btn-success w-100">Update</button>
+            </form>
+          {% else %}
+            <span class="text-muted">Admin only</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="5" class="text-center text-muted py-4">
+          🚫 No bugs found
+        </td>
+      </tr>
+    {% endif %}
   </tbody>
 </table>
-{% endblock %}
+<!-- PAGINATION -->
+<nav class="mt-4">
+  <ul class="pagination justify-content-center">
 
+    {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for('dashboard', page=pagination.prev_num, search=search) }}">
+          Previous
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Previous</span>
+      </li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+      </span>
+    </li>
+
+    {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for('dashboard', page=pagination.next_num, search=search) }}">
+          Next
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Next</span>
+      </li>
+    {% endif %}
+
+  </ul>
+</nav>
+{% endblock %}

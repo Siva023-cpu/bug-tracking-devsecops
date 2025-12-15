@@ -11,16 +11,29 @@ class User(db.Model):
 
 class Bug(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    severity = db.Column(db.String(50), nullable=False)
-    status = db.Column(db.String(50), default="Open")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    reported_by = db.Column(db.String(100))
+    severity = db.Column(db.String(20), nullable=False)  # ✅ ADD THIS
+    status = db.Column(db.String(20), default="Open")
+    reported_by = db.Column(db.String(50))
+
+ 
+
+class Solution(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+
+    bug_id = db.Column(db.Integer, db.ForeignKey('bug.id'), nullable=False)
+    user = db.Column(db.String(50))
+
+    bug = db.relationship('Bug', backref=db.backref('solutions', lazy=True))
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    bug_id = db.Column(db.Integer, db.ForeignKey('bug.id'))
+    user = db.Column(db.String(50), nullable=False)   # ✅ THIS MUST EXIST
+
+    bug_id = db.Column(db.Integer, db.ForeignKey('bug.id'), nullable=False)
+    bug = db.relationship('Bug', backref='comments')

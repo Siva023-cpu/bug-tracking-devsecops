@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Bug Details{% endblock %}
+
+{% block content %}
+<h2>{{ bug.title }}</h2>
+<p>{{ bug.description }}</p>
+<p>
+  <strong>Status:</strong>
+  {% if bug.status == 'Resolved' %}
+    <span class="badge bg-success">Resolved</span>
+  {% else %}
+    <span class="badge bg-warning text-dark">Open</span>
+  {% endif %} 
+</p>
+{% if session.is_admin %}
+  <p class="text-muted">You are an admin. You can manage bug status.</p>
+{% else %}
+  <p class="text-muted">Only admins can change bug status.</p>
+{% endif %}
+<hr>
+
+<h4>Solutions</h4>
+
+{% if bug.comments %}
+  <ul class="list-group mb-3">
+    {% for sol in bug.comments %}
+      <li class="list-group-item">
+        {{ sol.content }}
+        <br>
+        <small class="text-muted">— {{ sol.user }}</small>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No solutions yet.</p>
+{% endif %}
+
+<hr>
+
+<h4>Add a Solution</h4>
+
+<form method="post">
+  <textarea name="solution" class="form-control mb-2" required></textarea>
+  <button type="submit" class="btn btn-primary">Submit Solution</button>
+</form>
+
+{% endblock %}
