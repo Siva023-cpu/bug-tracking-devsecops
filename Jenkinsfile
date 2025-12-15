@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "bugtracker-devsecops"
+        IMAGE_NAME = "vasgrills/bugtracker-webapp"
+        IMAGE_TAG  = "latest"
+        CONTAINER_NAME = "bugtracker"
     }
 
     stages {
@@ -60,7 +62,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                docker build -t $IMAGE_NAME .
+                docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
         }
@@ -68,9 +70,31 @@ pipeline {
         stage('Docker Run (Test Container)') {
             steps {
                 sh '''
-                docker stop bugtracker || true
-                docker rm bugtracker || true
-                docker run -d -p 5000:5000 --name bugtracker $IMAGE_NAME
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
+                docker run -d -p 5000:5000 --name $CONTAINER_NAME $IMAGE_NAME:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Docker Hub Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Image to Docker Hub') {
+            steps {
+                sh '''
+                docker push $IMAGE_NAME:$IMAGE_TAG
                 '''
             }
         }
@@ -78,10 +102,16 @@ pipeline {
 
     post {
         success {
-            echo "✅ DevSecOps CI/CD with Docker completed successfully"
+            echo "✅ DevSecOps CI/CD completed & Docker image pushed to Docker Hub"
         }
         failure {
             echo "❌ Pipeline failed"
+        }
+        always {
+            sh '''
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+            '''
         }
     }
 }
