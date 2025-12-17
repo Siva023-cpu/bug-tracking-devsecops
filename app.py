@@ -2,11 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, User, Bug, Comment   # ✅ use Comment consistently
 from functools import wraps
+import os
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'secret123'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bugtracker.db'
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL# DATABASE CHANGE
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
