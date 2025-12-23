@@ -1,14 +1,34 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Bug, Comment   # ✅ use Comment consistently
+from models import db, User, Bug, Comment   
 from functools import wraps
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
 import os
+from models import Solution
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-secret-key-123")
 
-app.config['SECRET_KEY'] = 'secret123'
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL# DATABASE CHANGE
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'bug_attachments')
+SOLUTION_UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'solution_attachments')
+app.config['SOLUTION_UPLOAD_FOLDER'] = SOLUTION_UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'txt', 'log', 'pdf'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///bugtracker.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -24,7 +44,7 @@ def login_required(f):
 # ---------- HOME ----------
 @app.route('/')
 def home():
-    if 'user' in session:                      # ✅ FIX auto-login confusion
+    if 'user' in session:                      #  FIX auto-login confusion
         return redirect(url_for('dashboard'))
     return render_template('home.html')
 
@@ -122,12 +142,22 @@ def dashboard():
 @login_required
 def add_bug():
     if request.method == 'POST':
+        file = request.files.get('attachment')
+        filename = None
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
         bug = Bug(
             title=request.form['title'],
             description=request.form['description'],
             severity=request.form['severity'],
-            reported_by=session['user']
+            reported_by=session['user'],
+            attachment=filename
         )
+
         db.session.add(bug)
         db.session.commit()
 
@@ -135,7 +165,6 @@ def add_bug():
         return redirect(url_for('dashboard'))
 
     return render_template('add_bug.html')
-
 # ---------- UPDATE STATUS ----------
 @app.route('/update-status/<int:bug_id>', methods=['POST'])
 @login_required
@@ -158,24 +187,49 @@ def bug_detail(bug_id):
     bug = Bug.query.get_or_404(bug_id)
 
     if request.method == 'POST':
-        comment = Comment(
+        file = request.files.get('solution_attachment')
+        filename = None
+
+        if file and allowed_file(file.filename):
+            os.makedirs(app.config['SOLUTION_UPLOAD_FOLDER'], exist_ok=True)
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['SOLUTION_UPLOAD_FOLDER'], filename))
+
+        solution = Solution(
             content=request.form['solution'],
             bug_id=bug.id,
-            user=session['user']              # ✅ FIXED
+            user=session['user'],
+            attachment=filename
         )
-        if bug.status != "Resolved":
-            bug.status = "Resolved"
-      #  status when solution added
-        db.session.add(comment)
+
+        bug.status = "Resolved"
+
+        db.session.add(solution)
         db.session.commit()
 
-        flash("Solution added successfully!", "success")
+        flash("Solution submitted successfully!", "success")
         return redirect(url_for('bug_detail', bug_id=bug.id))
 
     return render_template('bug_detail.html', bug=bug)
+
+
+@app.route('/uploads/<filename>')
+@login_required
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/solution-uploads/<filename>')
+@login_required
+def download_solution(filename):
+    return send_from_directory(
+        app.config['SOLUTION_UPLOAD_FOLDER'],
+        filename,
+        as_attachment=True
+    )
+
 
 # ---------- RUN ----------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=5000, debug=False) # ✅ debug=False for production
+    app.run(host="0.0.0.0", port=5000, debug=False) # debug=False for production

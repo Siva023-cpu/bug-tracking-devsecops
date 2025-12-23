@@ -2,35 +2,56 @@
 {% block title %}Bug Details{% endblock %}
 
 {% block content %}
+
 <h2>{{ bug.title }}</h2>
 <p>{{ bug.description }}</p>
+
 <p>
   <strong>Status:</strong>
   {% if bug.status == 'Resolved' %}
     <span class="badge bg-success">Resolved</span>
   {% else %}
     <span class="badge bg-warning text-dark">Open</span>
-  {% endif %} 
+  {% endif %}
 </p>
-{% if session.is_admin %}
+
+{% if session.get('is_admin') %}
   <p class="text-muted">You are an admin. You can manage bug status.</p>
 {% else %}
   <p class="text-muted">Only admins can change bug status.</p>
 {% endif %}
+
+{% if bug.attachment %}
+<hr>
+<p>
+  <strong>Bug Attachment:</strong>
+  <a href="{{ url_for('uploaded_file', filename=bug.attachment) }}" target="_blank">
+    Download
+  </a>
+</p>
+{% endif %}
+
 <hr>
 
 <h4>Solutions</h4>
 
-{% if bug.comments %}
-  <ul class="list-group mb-3">
-    {% for sol in bug.comments %}
-      <li class="list-group-item">
-        {{ sol.content }}
-        <br>
+{% if bug.solutions %}
+  {% for sol in bug.solutions %}
+    <div class="card mb-2">
+      <div class="card-body">
+        <p>{{ sol.content }}</p>
         <small class="text-muted">— {{ sol.user }}</small>
-      </li>
-    {% endfor %}
-  </ul>
+
+        {% if sol.attachment %}
+          <br>
+          <a class="btn btn-sm btn-outline-primary mt-2"
+             href="{{ url_for('download_solution', filename=sol.attachment) }}">
+            Download Attachment
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
 {% else %}
   <p class="text-muted">No solutions yet.</p>
 {% endif %}
@@ -39,9 +60,18 @@
 
 <h4>Add a Solution</h4>
 
-<form method="post">
-  <textarea name="solution" class="form-control mb-2" required></textarea>
-  <button type="submit" class="btn btn-primary">Submit Solution</button>
+<form method="post" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label class="form-label">Your Solution</label>
+    <textarea name="solution" class="form-control" required></textarea>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">📎 Attach File (optional)</label>
+    <input type="file" name="solution_attachment" class="form-control">
+  </div>
+
+  <button class="btn btn-success">Submit Solution</button>
 </form>
 
 {% endblock %}

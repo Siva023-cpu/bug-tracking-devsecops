@@ -8,8 +8,12 @@
       <div class="card-body">
         <h4 class="mb-3">Report a Bug</h4>
 
-        <form method="post">
+        <form method="POST" enctype="multipart/form-data">
+
           <input class="form-control mb-3" name="title" placeholder="Bug Title" required>
+          <label class="mt-2">Attachment (optional)</label>
+          <input type="file" name="attachment" class="form-control">
+          <small class="text-muted">Allowed: images, txt, pdf</small>
 
           <textarea class="form-control mb-3" name="description" placeholder="Bug Description" required></textarea>
 

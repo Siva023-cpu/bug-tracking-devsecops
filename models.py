@@ -13,15 +13,17 @@ class Bug(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    severity = db.Column(db.String(20), nullable=False)  # ✅ ADD THIS
+    severity = db.Column(db.String(20), nullable=False)  
     status = db.Column(db.String(20), default="Open")
     reported_by = db.Column(db.String(50))
+    attachment = db.Column(db.String(255), nullable=True) 
 
  
 
 class Solution(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
+    attachment = db.Column(db.String(300))
 
     bug_id = db.Column(db.Integer, db.ForeignKey('bug.id'), nullable=False)
     user = db.Column(db.String(50))
