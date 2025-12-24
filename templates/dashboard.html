@@ -67,45 +67,50 @@
       <th>Update</th>
     </tr>
   </thead>
+
   <tbody>
     {% if bugs %}
       {% for bug in bugs %}
-      <tr {% if request.args.get('updated') == bug.id|string %}class="status-updated"{% endif %}>
+      <tr>
         <td>
           <a href="{{ url_for('bug_detail', bug_id=bug.id) }}">
             {{ bug.title }}
           </a>
         </td>
+
         <td>
-        {% if bug.severity == 'High' %}
-          <span class="badge bg-danger badge-status">High</span>
-        {% elif bug.severity == 'Medium' %}
-         <span class="badge bg-warning text-dark badge-status">Medium</span>
-        {% else %}
-          <span class="badge bg-success badge-status">Low</span>
-        {% endif %}
+          {% if bug.severity == 'High' %}
+            <span class="badge bg-danger">High</span>
+          {% elif bug.severity == 'Medium' %}
+            <span class="badge bg-warning text-dark">Medium</span>
+          {% else %}
+            <span class="badge bg-success">Low</span>
+          {% endif %}
         </td>
 
         <td>
           {% if bug.status == 'Resolved' %}
-            <span class="badge bg-success badge-status">Resolved</span>
+            <span class="badge bg-success">Resolved</span>
           {% elif bug.status == 'In Progress' %}
-            <span class="badge bg-info badge-status">In Progress</span>
+            <span class="badge bg-info">In Progress</span>
           {% elif bug.status == 'Closed' %}
-            <span class="badge bg-secondary badge-status">Closed</span>
+            <span class="badge bg-secondary">Closed</span>
           {% else %}
-            <span class="badge bg-warning badge-status">Open</span>
+            <span class="badge bg-warning">Open</span>
           {% endif %}
         </td>
+
         <td>{{ bug.reported_by }}</td>
+
+        <!-- ✅ ADMIN CHECK FIXED HERE -->
         <td>
-          {% if session.get('is_admin') %}
+          {% if current_user and current_user.role == 'admin' %}
             <form method="post" action="{{ url_for('update_status', bug_id=bug.id) }}">
               <select name="status" class="form-select form-select-sm mb-1">
                 <option value="Open" {% if bug.status == 'Open' %}selected{% endif %}>Open</option>
                 <option value="In Progress" {% if bug.status == 'In Progress' %}selected{% endif %}>In Progress</option>
                 <option value="Resolved" {% if bug.status == 'Resolved' %}selected{% endif %}>Resolved</option>
-               <option value="Closed" {% if bug.status == 'Closed' %}selected{% endif %}>Closed</option>
+                <option value="Closed" {% if bug.status == 'Closed' %}selected{% endif %}>Closed</option>
               </select>
               <button class="btn btn-sm btn-success w-100">Update</button>
             </form>
@@ -124,6 +129,7 @@
     {% endif %}
   </tbody>
 </table>
+
 <!-- PAGINATION -->
 <nav class="mt-4">
   <ul class="pagination justify-content-center">
@@ -162,4 +168,5 @@
 
   </ul>
 </nav>
+
 {% endblock %}

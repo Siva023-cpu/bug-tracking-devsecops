@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Manage Users</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 60%;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Admin Panel – User Management</h2>
+
+{% for user in users %}
+<tr>
+    <td>{{ user.id }}</td>
+    <td>{{ user.username }}</td>
+    <td>
+        <form method="POST">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+
+            <select name="role">
+                <option value="user" {% if user.role == 'user' %}selected{% endif %}>user</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+            </select>
+
+            <button type="submit">Update</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+
+
+<br>
+<a href="/dashboard">⬅ Back to Dashboard</a>
+
+</body>
+</html>

@@ -1,235 +1,335 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, session, flash, send_from_directory
+)
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, User, Bug, Comment   
-from functools import wraps
 from werkzeug.utils import secure_filename
-from flask import send_from_directory
+from functools import wraps
 import os
-from models import Solution
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+from models import db, User, Bug, Solution, Notification
+
+# ---------------- APP CONFIG ---------------- #
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-secret-key-123")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "bugtracker.db")
 
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'bug_attachments')
-SOLUTION_UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'solution_attachments')
-app.config['SOLUTION_UPLOAD_FOLDER'] = SOLUTION_UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'txt', 'log', 'pdf'}
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+BUG_UPLOAD = os.path.join(BASE_DIR, "uploads", "bug_attachments")
+SOLUTION_UPLOAD = os.path.join(BASE_DIR, "uploads", "solution_attachments")
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+app.config["BUG_UPLOAD"] = BUG_UPLOAD
+app.config["SOLUTION_UPLOAD"] = SOLUTION_UPLOAD
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///bugtracker.db"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf", "txt", "log"}
 
 db.init_app(app)
 
-# ---------- LOGIN REQUIRED DECORATOR ----------
+print("🔥 DATABASE:", app.config["SQLALCHEMY_DATABASE_URI"])
+
+# ---------------- HELPERS ---------------- #
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if 'user' not in session:
-            return redirect(url_for('login'))
+        if "user" not in session:
+            return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
-# ---------- HOME ----------
-@app.route('/')
-def home():
-    if 'user' in session:                      #  FIX auto-login confusion
-        return redirect(url_for('dashboard'))
-    return render_template('home.html')
 
-# ---------- AUTH ----------
-@app.route('/register', methods=['GET', 'POST'])
+
+def admin_required():
+    user = get_current_user()
+    return user and user.role == "admin"
+
+
+def get_current_user():
+    if "user" not in session:
+        return None
+    return User.query.filter_by(username=session["user"]).first()
+
+
+@app.context_processor
+def inject_user():
+    return dict(current_user=get_current_user())
+
+
+
+# ---------------- ROUTES ---------------- #
+
+@app.route("/")
+def home():
+    return redirect(url_for("dashboard")) if "user" in session else render_template("home.html")
+
+
+# -------- AUTH -------- #
+
+@app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = generate_password_hash(request.form['password'])
+    if request.method == "POST":
+        username = request.form["username"]
+        email = request.form["email"]
+        password = generate_password_hash(request.form["password"])
 
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "danger")
-            return redirect(url_for('register'))
+            return redirect(url_for("register"))
 
-        is_admin = User.query.count() == 0
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered", "danger")
+            return redirect(url_for("register"))
 
-        user = User(username=username, password=password, is_admin=is_admin)
+        # ✅ FIRST USER = ADMIN (RELIABLE)
+        role = "admin" if not User.query.first() else "user"
+
+        user = User(
+            username=username,
+            email=email,
+            password=password,
+            role=role
+        )
+
         db.session.add(user)
         db.session.commit()
 
-        flash("Account created successfully!", "success")
-        return redirect(url_for('login'))
+        flash("Account created successfully", "success")
+        return redirect(url_for("login"))
 
-    return render_template('register.html')
+    return render_template("register.html")
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if 'user' in session:
-        return redirect(url_for('dashboard'))
-
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
         user = User.query.filter_by(username=username).first()
 
-        if not user:
-            flash('User not registered. Please register first.', 'danger')
-            return redirect(url_for('login'))
-
-        if not check_password_hash(user.password, password):
-            flash('Incorrect password.', 'danger')
-            return redirect(url_for('login'))
+        if not user or not check_password_hash(user.password, password):
+            flash("Invalid credentials", "danger")
+            return redirect(url_for("login"))
 
         session.clear()
-        session['user'] = user.username
-        session['is_admin'] = user.is_admin
+        session["user"] = user.username
+        session["role"] = user.role
+        session["is_admin"] = True if user.role == "admin" else False  # ✅ FIX
 
-        flash('Login successful!', 'success')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for("dashboard"))
 
-    return render_template('login.html')
-
+    return render_template("login.html")
 
 
-@app.route('/logout')
+
+@app.route("/logout")
 def logout():
-    session.clear()  
-    flash("You have been logged out successfully.", "info")                         # ✅ FIX
-    return redirect(url_for('login'))
+    session.clear()
+    flash("Logged out successfully", "info")
+    return redirect(url_for("login"))
 
-# ---------- DASHBOARD ----------
-@app.route('/dashboard')
+
+# -------- DASHBOARD -------- #
+
+@app.route("/dashboard")
 @login_required
 def dashboard():
-    page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
+    page = request.args.get("page", 1, type=int)
+    search = request.args.get("search", "")
 
     query = Bug.query
-
     if search:
         query = query.filter(Bug.title.ilike(f"%{search}%"))
 
-    pagination = query.order_by(Bug.id.desc()).paginate(page=page, per_page=5)
-
-    bugs = pagination.items
-
-    total = Bug.query.count()
-    open_bugs = Bug.query.filter(Bug.status != 'Resolved').count()
-    resolved = Bug.query.filter(Bug.status == 'Resolved').count()
+    pagination = query.order_by(Bug.id.desc()).paginate(page=page, per_page=5, error_out=False)
 
     return render_template(
-        'dashboard.html',
-        bugs=bugs,
+        "dashboard.html",
+        bugs=pagination.items,
         pagination=pagination,
-        total=total,
-        open_bugs=open_bugs,
-        resolved=resolved,
+        total=Bug.query.count(),
+        open_bugs=Bug.query.filter(Bug.status != "Resolved").count(),
+        resolved=Bug.query.filter(Bug.status == "Resolved").count(),
         search=search
     )
 
-# ---------- ADD BUG ----------
-@app.route('/add-bug', methods=['GET', 'POST'])
+@app.route("/bug/<int:bug_id>/update-status", methods=["POST"])
+@login_required
+def update_status(bug_id):
+    if session.get("role") != "admin":
+        flash("Admin access required", "danger")
+        return redirect(url_for("dashboard"))
+
+    bug = Bug.query.get_or_404(bug_id)
+    new_status = request.form.get("status")
+
+    if new_status:
+        bug.status = new_status
+        db.session.commit()
+        flash("Bug status updated", "success")
+
+    return redirect(url_for("dashboard", updated=bug_id))
+
+
+
+# -------- ADD BUG -------- #
+
+@app.route("/add-bug", methods=["GET", "POST"])
 @login_required
 def add_bug():
-    if request.method == 'POST':
-        file = request.files.get('attachment')
+    if request.method == "POST":
+        file = request.files.get("attachment")
         filename = None
 
         if file and allowed_file(file.filename):
+            os.makedirs(app.config["BUG_UPLOAD"], exist_ok=True)
             filename = secure_filename(file.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            file.save(os.path.join(app.config["BUG_UPLOAD"], filename))
 
         bug = Bug(
-            title=request.form['title'],
-            description=request.form['description'],
-            severity=request.form['severity'],
-            reported_by=session['user'],
+            title=request.form["title"],
+            description=request.form["description"],
+            severity=request.form["severity"],
+            reported_by=session["user"],
             attachment=filename
         )
 
         db.session.add(bug)
         db.session.commit()
 
-        flash("Bug reported successfully!", "success")
-        return redirect(url_for('dashboard'))
+        flash("Bug reported successfully", "success")
+        return redirect(url_for("dashboard"))
 
-    return render_template('add_bug.html')
-# ---------- UPDATE STATUS ----------
-@app.route('/update-status/<int:bug_id>', methods=['POST'])
-@login_required
-def update_status(bug_id):
-    if not session.get('is_admin'):
-        flash("Admin access required", "danger")
-        return redirect(url_for('dashboard'))
+    return render_template("add_bug.html")
 
-    bug = Bug.query.get_or_404(bug_id)
-    bug.status = request.form['status']
-    db.session.commit()
 
-    flash("Bug status updated", "success")
-    return redirect(url_for('dashboard',updated=bug.id))
+# -------- BUG DETAILS -------- #
 
-# ---------- BUG DETAILS & COMMENTS ----------
-@app.route('/bug/<int:bug_id>', methods=['GET', 'POST'])
+@app.route("/bug/<int:bug_id>", methods=["GET", "POST"])
 @login_required
 def bug_detail(bug_id):
     bug = Bug.query.get_or_404(bug_id)
 
-    if request.method == 'POST':
-        file = request.files.get('solution_attachment')
+    if request.method == "POST":
+        file = request.files.get("solution_attachment")
         filename = None
 
         if file and allowed_file(file.filename):
-            os.makedirs(app.config['SOLUTION_UPLOAD_FOLDER'], exist_ok=True)
+            os.makedirs(app.config["SOLUTION_UPLOAD"], exist_ok=True)
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['SOLUTION_UPLOAD_FOLDER'], filename))
+            file.save(os.path.join(app.config["SOLUTION_UPLOAD"], filename))
 
         solution = Solution(
-            content=request.form['solution'],
+            content=request.form["solution"],
+            attachment=filename,
             bug_id=bug.id,
-            user=session['user'],
-            attachment=filename
+            user=session["user"]
         )
 
         bug.status = "Resolved"
 
         db.session.add(solution)
+        db.session.add(Notification(
+            message=f"Your bug '{bug.title}' has been resolved",
+            user=bug.reported_by
+        ))
+
+        db.session.commit()
+        flash("Solution submitted successfully", "success")
+
+    return render_template("bug_detail.html", bug=bug)
+
+
+# -------- ADMIN USERS -------- #
+
+@app.route("/admin/users", methods=["GET", "POST"])
+@login_required
+def manage_users():
+    if session.get("role") != "admin":
+        flash("Admin access required", "danger")
+        return redirect(url_for("dashboard"))
+
+    users = User.query.all()
+
+    if request.method == "POST":
+        user_id = request.form["user_id"]
+        role = request.form["role"]
+
+        user = User.query.get(int(user_id))
+        user.role = role
         db.session.commit()
 
-        flash("Solution submitted successfully!", "success")
-        return redirect(url_for('bug_detail', bug_id=bug.id))
+        # ✅ UPDATE SESSION IF CURRENT USER ROLE CHANGED
+        if user.username == session.get("user"):
+            session["role"] = role
+            session["is_admin"] = True if role == "admin" else False
 
-    return render_template('bug_detail.html', bug=bug)
+        flash("User role updated", "success")
+        return redirect(url_for("manage_users"))
+
+    return render_template("admin_users.html", users=users)
 
 
-@app.route('/uploads/<filename>')
+    return render_template("admin_users.html", users=User.query.all())
+# -------- NOTIFICATIONS -------- #
+
+@app.route("/notifications")
+@login_required
+def notifications():
+    notes = Notification.query.filter_by(user=session["user"]).order_by(Notification.created_at.desc())
+    return render_template("notifications.html", notifications=notes)
+
+
+# -------- FILE DOWNLOADS -------- #
+
+@app.route("/bug-uploads/<filename>")
+@login_required
+def bug_upload(filename):
+    return send_from_directory(app.config["BUG_UPLOAD"], filename)
+
+@app.route("/uploads/<filename>")
 @login_required
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename
+    )
+@app.route("/solution-uploads/<filename>")
+@login_required
+def solution_upload(filename):
+    return send_from_directory(app.config["SOLUTION_UPLOAD"], filename)
 
-@app.route('/solution-uploads/<filename>')
+@app.route("/download/solution/<filename>")
 @login_required
 def download_solution(filename):
     return send_from_directory(
-        app.config['SOLUTION_UPLOAD_FOLDER'],
+        app.config["UPLOAD_FOLDER"],
         filename,
         as_attachment=True
     )
 
 
-# ---------- RUN ----------
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(host="0.0.0.0", port=5000, debug=False) # debug=False for production
+
+# ---------------- START ---------------- #
+
+with app.app_context():
+    db.create_all()
+
+    # ✅ SAFETY: Ensure at least one admin
+    if not User.query.filter_by(role="admin").first():
+        first_user = User.query.first()
+        if first_user:
+            first_user.role = "admin"
+            db.session.commit()
+            print("⚡ Auto-promoted admin:", first_user.username)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
