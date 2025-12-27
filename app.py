@@ -299,7 +299,7 @@ def bug_upload(filename):
 @login_required
 def uploaded_file(filename):
     return send_from_directory(
-        app.config["UPLOAD_FOLDER"],
+        app.config["BUG_UPLOAD"],
         filename
     )
 @app.route("/solution-uploads/<filename>")
@@ -311,7 +311,7 @@ def solution_upload(filename):
 @login_required
 def download_solution(filename):
     return send_from_directory(
-        app.config["UPLOAD_FOLDER"],
+        app.config["SOLUTION_UPLOAD"],
         filename,
         as_attachment=True
     )
