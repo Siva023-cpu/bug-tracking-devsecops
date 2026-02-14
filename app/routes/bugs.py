@@ -84,6 +84,11 @@ def update_status(bug_id):
 def add_solution(bug_id):
     bug = Bug.query.get_or_404(bug_id)
 
+    # 🚫 BLOCK if bug is closed
+    if bug.status.lower() == "closed":
+        flash("This bug is closed. No more solutions can be submitted.", "warning")
+        return redirect(url_for("bugs.bug_detail", bug_id=bug.id))
+
     content = request.form.get("solution")
     file = request.files.get("solution_attachment")
 

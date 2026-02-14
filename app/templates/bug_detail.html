@@ -19,12 +19,22 @@
 
         <p>{{ bug.description }}</p>
 
+        <!-- STATUS BADGE -->
         <p class="mt-3">
             <strong>Status:</strong>
-            {% if bug.status == 'Resolved' %}
-                <span class="badge bg-success px-3 py-2">Resolved</span>
-            {% else %}
-                <span class="badge bg-warning text-dark px-3 py-2">Open</span>
+
+            {% if bug.status == 'Open' %}
+                <span class="badge bg-success px-3 py-2">Open</span>
+
+            {% elif bug.status == 'In Progress' %}
+                <span class="badge bg-warning text-dark px-3 py-2">In Progress</span>
+
+            {% elif bug.status == 'Resolved' %}
+                <span class="badge bg-info px-3 py-2">Resolved</span>
+
+            {% elif bug.status == 'Closed' %}
+                <span class="badge bg-danger px-3 py-2">Closed</span>
+
             {% endif %}
         </p>
 
@@ -39,7 +49,8 @@
             <p>
                 <strong>📎 Bug Attachment:</strong>
                 <a class="btn btn-sm btn-outline-primary ms-2"
-                   href="{{ url_for('static', filename='uploads/' + bug.attachment) }}" target="_blank">
+                   href="{{ url_for('static', filename='uploads/' + bug.attachment) }}"
+                   target="_blank">
                     Download
                 </a>
             </p>
@@ -49,7 +60,7 @@
 </div>
 
 
-<!-- Solutions Section -->
+<!-- SOLUTIONS SECTION -->
 <div class="mb-4" data-aos="fade-up">
     <h4 class="mb-3">Solutions</h4>
 
@@ -85,7 +96,9 @@
 </div>
 
 
-<!-- Add Solution Form -->
+<!-- ADD SOLUTION FORM (Hidden Only If Closed) -->
+{% if bug.status|lower != 'closed' %}
+
 <div class="card shadow-sm" data-aos="fade-up">
     <div class="card-body">
 
@@ -97,20 +110,32 @@
 
             <div class="mb-3">
                 <label class="form-label">Your Solution</label>
-                <textarea name="solution" class="form-control" rows="4" required></textarea>
+                <textarea name="solution" class="form-control"
+                          rows="4" required></textarea>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">📎 Attach File (optional)</label>
-                <input type="file" name="solution_attachment" class="form-control">
+                <input type="file"
+                       name="solution_attachment"
+                       class="form-control">
             </div>
 
             <button class="btn btn-success">
                 <i class="fa-solid fa-paper-plane"></i> Submit Solution
             </button>
+
         </form>
 
     </div>
 </div>
+
+{% else %}
+
+<div class="alert alert-secondary shadow-sm" data-aos="fade-up">
+    🔒 This bug is closed. No further solutions can be submitted.
+</div>
+
+{% endif %}
 
 {% endblock %}

@@ -13,6 +13,7 @@ def manage_users():
         flash("Admin access required", "danger")
         return redirect(url_for("bugs.dashboard"))
 
+    # 🔹 Handle Role Update (POST)
     if request.method == "POST":
         user = User.query.get(int(request.form["user_id"]))
         user.role = request.form["role"]
@@ -20,16 +21,34 @@ def manage_users():
         flash("Role updated", "success")
         return redirect(url_for("admin.manage_users"))
 
-    # Pagination
+    # 🔹 Handle Search + Pagination (GET)
     page = request.args.get("page", 1, type=int)
-    pagination = User.query.order_by(User.id.desc()).paginate(page=page, per_page=10)
+    search = request.args.get("search", "").strip()
+
+    query = User.query
+
+    # Apply search filter
+    if search:
+        query = query.filter(
+            (User.username.ilike(f"%{search}%")) |
+            (User.email.ilike(f"%{search}%"))
+        )
+
+    pagination = query.order_by(User.id.desc()).paginate(
+        page=page,
+        per_page=10,
+        error_out=False
+    )
+
     users = pagination.items
 
     return render_template(
         "admin/admin_users.html",
         users=users,
-        pagination=pagination   
+        pagination=pagination,
+        search=search
     )
+
 
 @admin_bp.route("/admin/users/add", methods=["GET", "POST"])
 @login_required
