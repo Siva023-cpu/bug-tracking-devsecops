@@ -93,9 +93,9 @@ pipeline {
                 docker rm bugtracker || true
 
                 docker run -d \
-                --network bridge \
+                --network jenkins-net \
                 --name bugtracker \
-                vasgrills/bugtracker-webapp:${BUILD_NUMBER}
+                $IMAGE_NAME:$IMAGE_TAG
 
                 sleep 5
 
@@ -103,6 +103,7 @@ pipeline {
                 '''
             }
         }
+
 
 
         stage('Docker Hub Login') {
