@@ -16,7 +16,7 @@ setTimeout(function () {
 ----------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
 
-    // Initialize AOS if available
+    // Initialize AOS safely
     if (typeof AOS !== "undefined") {
         AOS.init({
             duration: 800,
@@ -24,31 +24,55 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 🔥 Permanent Dark Mode Fix
-    const savedTheme = localStorage.getItem("darkMode");
+    /* -----------------------------
+       Load Saved Theme
+    ----------------------------- */
+    const savedTheme = localStorage.getItem("theme") || "light";
 
-    if (savedTheme === null) {
-        // Default to LIGHT mode if nothing saved
-        document.body.classList.remove("dark-mode");
-        localStorage.setItem("darkMode", "false");
-    } 
-    else if (savedTheme === "true") {
-        document.body.classList.add("dark-mode");
-    } 
-    else {
-        document.body.classList.remove("dark-mode");
+    // Apply saved theme
+    document.documentElement.setAttribute("data-bs-theme", savedTheme);
+
+    // Update icon on page load
+    const icon = document.getElementById("themeIcon");
+    if (icon) {
+        if (savedTheme === "dark") {
+            icon.classList.remove("fa-moon");
+            icon.classList.add("fa-sun");
+        } else {
+            icon.classList.remove("fa-sun");
+            icon.classList.add("fa-moon");
+        }
     }
 });
 
 
 /* -----------------------------
-   Toggle Dark Mode
+   Toggle Dark Mode (Bootstrap 5.3)
 ----------------------------- */
 function toggleDarkMode() {
-    document.body.classList.toggle("dark-mode");
 
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("darkMode", isDark);
+    const html = document.documentElement;
+    const icon = document.getElementById("themeIcon");
+
+    const currentTheme = html.getAttribute("data-bs-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+
+    // Set new theme
+    html.setAttribute("data-bs-theme", newTheme);
+
+    // Save to localStorage
+    localStorage.setItem("theme", newTheme);
+
+    // Change icon
+    if (icon) {
+        if (newTheme === "dark") {
+            icon.classList.remove("fa-moon");
+            icon.classList.add("fa-sun");
+        } else {
+            icon.classList.remove("fa-sun");
+            icon.classList.add("fa-moon");
+        }
+    }
 }
 
 
