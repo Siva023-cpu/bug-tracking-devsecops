@@ -92,7 +92,9 @@ pipeline {
                 docker stop $CONTAINER_NAME || true
                 docker rm $CONTAINER_NAME || true
                 docker run -d -p 5000:5000 --name $CONTAINER_NAME $IMAGE_NAME:$IMAGE_TAG
-                sleep 10
+                sleep 5
+                docker logs bugtracker
+                sleep 5
                 curl -f http://localhost:5000 || exit 1
                 '''
             }
