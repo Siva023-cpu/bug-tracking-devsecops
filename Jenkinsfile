@@ -38,6 +38,17 @@ pipeline {
             }
         }
 
+        stage('Auto Format Code') {
+            steps {
+                sh '''
+                . venv/bin/activate
+                pip install autopep8
+                autopep8 --in-place --recursive app
+                '''
+            }
+        }
+
+
         stage('Code Quality Check (Flake8)') {
             steps {
                 sh '''
