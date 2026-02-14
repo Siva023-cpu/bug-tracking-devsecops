@@ -99,61 +99,6 @@ th, td {
     100% { transform: scale(1); }
 }
 
-/* =====================================================
-   DARK MODE
-===================================================== */
-
-body.dark-mode {
-    background-color: #121212;
-    color: #f1f1f1;
-}
-
-body.dark-mode .navbar {
-    background-color: #1f1f1f !important;
-}
-
-body.dark-mode .card {
-    background-color: #1e1e1e !important;
-    color: #f1f1f1 !important;
-}
-
-body.dark-mode .form-control {
-    background-color: #2a2a2a !important;
-    color: #ffffff !important;
-    border-color: #444 !important;
-}
-
-body.dark-mode .form-control::placeholder {
-    color: #aaaaaa !important;
-}
-
-/* Tables in dark mode */
-body.dark-mode table {
-    background-color: #1e1e1e !important;
-    color: #f1f1f1 !important;
-}
-
-body.dark-mode table thead th {
-    background-color: #212529 !important;
-    color: #ffffff !important;
-    border-color: #333 !important;
-}
-
-body.dark-mode table tbody tr:hover {
-    background-color: #2a2a2a !important;
-}
-
-/* Pagination */
-body.dark-mode .pagination .page-link {
-    background-color: #1e1e1e !important;
-    color: #ffffff !important;
-    border-color: #444 !important;
-}
-
-body.dark-mode .pagination .page-item.active .page-link {
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
-}
 .auth-wrapper {
     min-height: 70vh;
 }
