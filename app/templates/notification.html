@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold">🔔 Notifications</h3>
+
+        {% if notifications %}
+        <a href="{{ url_for('main.clear_notifications') }}"
+           class="btn btn-sm btn-outline-danger">
+            Clear All
+        </a>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+
+        {% for note in notifications %}
+            <div class="card shadow-sm mb-3 border-0 rounded-3">
+                <div class="card-body d-flex justify-content-between align-items-start">
+
+                    <div>
+                        <p class="mb-1">
+                            {{ note.message }}
+                        </p>
+                        <small class="text-muted">
+                            {{ note.timestamp.strftime('%d %b %Y, %I:%M %p') }}
+                        </small>
+                    </div>
+
+                    {% if not note.is_read %}
+                        <span class="badge bg-primary">
+                            New
+                        </span>
+                    {% endif %}
+
+                </div>
+            </div>
+        {% endfor %}
+
+    {% else %}
+
+        <div class="text-center py-5">
+            <i class="fa-solid fa-bell-slash fa-3x text-muted mb-3"></i>
+            <p class="text-muted">
+                You have no notifications.
+            </p>
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

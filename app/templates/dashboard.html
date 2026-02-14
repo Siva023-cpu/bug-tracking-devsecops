@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- HEADER / NAVBAR -->
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <h2 class="mb-0">Welcome, {{ current_user.username }}!</h2>
+
+    <div>
+        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary me-2">
+            <i class="fa-solid fa-key"></i> Change Password
+        </a>
+        <a href="{{ url_for('bugs.add_bug') }}" class="btn btn-danger me-2">
+            <i class="fa-solid fa-bug"></i> Report Bug
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-dark">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </a>
+    </div>
+</div>
+
+<!-- DASHBOARD STATS CARDS -->
+<div class="row mb-4" data-aos="fade-up">
+
+  <!-- Total Bugs -->
+  <div class="col-md-4 mb-3">
+    <a href="{{ url_for('main.dashboard', status='all') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 hover-scale {% if status_filter=='all' %}border border-3 border-primary{% endif %} text-white bg-primary">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-bug fa-2x mb-2"></i>
+          <h6>Total Bugs</h6>
+          <h2 class="fw-bold">{{ total_bugs }}</h2>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Open Bugs -->
+  <div class="col-md-4 mb-3">
+    <a href="{{ url_for('main.dashboard', status='Open') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 hover-scale {% if status_filter=='Open' %}border border-3 border-primary{% endif %} text-dark bg-warning">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-clock fa-2x mb-2"></i>
+          <h6>Open Bugs</h6>
+          <h2 class="fw-bold">{{ open_bugs }}</h2>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Resolved Bugs -->
+  <div class="col-md-4 mb-3">
+    <a href="{{ url_for('main.dashboard', status='Resolved') }}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 hover-scale {% if status_filter=='Resolved' %}border border-3 border-primary{% endif %} text-white bg-success">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-check fa-2x mb-2"></i>
+          <h6>Resolved</h6>
+          <h2 class="fw-bold">{{ resolved_bugs }}</h2>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+<!-- SEARCH BAR -->
+<form method="get" action="{{ url_for('main.dashboard') }}" class="mb-4" data-aos="fade-up">
+  <div class="input-group shadow-sm rounded">
+    <input
+      type="text"
+      name="search"
+      class="form-control"
+      placeholder="Search bugs by title..."
+      value="{{ search }}"
+    >
+    <button type="submit" class="btn btn-outline-primary">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+      Clear
+    </a>
+  </div>
+</form>
+
+<!-- BUG TABLE -->
+<div class="table-responsive shadow-sm rounded" data-aos="fade-up">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Title</th>
+        <th>Severity</th>
+        <th>Status</th>
+        <th>Reported By</th>
+        <th>Update</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if bugs %}
+        {% for bug in bugs %}
+        <tr>
+          <td>
+            <a href="{{ url_for('bugs.bug_detail', bug_id=bug.id) }}" class="fw-semibold text-decoration-none">
+              {{ bug.title }}
+            </a>
+          </td>
+          <td>
+            {% if bug.severity == 'High' %}
+              <span class="badge bg-danger">High</span>
+            {% elif bug.severity == 'Medium' %}
+              <span class="badge bg-warning text-dark">Medium</span>
+            {% else %}
+              <span class="badge bg-success">Low</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if bug.status == 'Resolved' %}
+              <span class="badge bg-success">Resolved</span>
+            {% elif bug.status == 'In Progress' %}
+              <span class="badge bg-info">In Progress</span>
+            {% elif bug.status == 'Closed' %}
+              <span class="badge bg-secondary">Closed</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Open</span>
+            {% endif %}
+          </td>
+          <td>{{ bug.reported_by }}</td>
+          <td>
+            {% if current_user.role == 'admin' %}
+              <form method="post" action="{{ url_for('bugs.update_status', bug_id=bug.id) }}">
+                <select name="status" class="form-select form-select-sm mb-1">
+                  <option value="Open" {% if bug.status == 'Open' %}selected{% endif %}>Open</option>
+                  <option value="In Progress" {% if bug.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                  <option value="Resolved" {% if bug.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                  <option value="Closed" {% if bug.status == 'Closed' %}selected{% endif %}>Closed</option>
+                </select>
+                <button class="btn btn-sm btn-success w-100">Update</button>
+              </form>
+            {% else %}
+              <span class="text-muted small">Admin only</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">🚫 No bugs found</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- PAGINATION -->
+<nav class="mt-4" data-aos="fade-up">
+  <ul class="pagination justify-content-center">
+
+    {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for('main.dashboard', page=pagination.prev_num, search=search) }}">
+          Previous
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Previous</span>
+      </li>
+    {% endif %}
+
+    <li class="page-item disabled">
+      <span class="page-link">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+      </span>
+    </li>
+
+    {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           href="{{ url_for('main.dashboard', page=pagination.next_num, search=search) }}">
+          Next
+        </a>
+      </li>
+    {% else %}
+      <li class="page-item disabled">
+        <span class="page-link">Next</span>
+      </li>
+    {% endif %}
+
+  </ul>
+</nav>
+
+{% endblock %}

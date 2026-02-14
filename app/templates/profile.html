@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <h2 class="mb-4" data-aos="fade-down">My Profile</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- User Info Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm p-4 h-100" data-aos="fade-up">
+                <h5 class="mb-3">Profile Info</h5>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Role:</strong> {{ user.role }}</p>
+                <p><strong>Verified:</strong> {{ 'Yes' if user.is_verified else 'No' }}</p>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-warning mt-3">
+                    <i class="fa-solid fa-key"></i> Change Password
+                </a>
+            </div>
+        </div>
+
+        <!-- Edit Profile Form -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm p-4 h-100" data-aos="fade-up">
+                <h5 class="mb-3">Edit Profile</h5>
+                <form method="POST" action="{{ url_for('auth.edit_profile') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
