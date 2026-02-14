@@ -12,9 +12,11 @@ setTimeout(function () {
 
 
 /* -----------------------------
-   Initialize AOS Animation
+   Initialize Page
 ----------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
+
+    // Initialize AOS if available
     if (typeof AOS !== "undefined") {
         AOS.init({
             duration: 800,
@@ -22,9 +24,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Load Dark Mode Preference
-    if (localStorage.getItem("darkMode") === "true") {
+    // 🔥 Permanent Dark Mode Fix
+    const savedTheme = localStorage.getItem("darkMode");
+
+    if (savedTheme === null) {
+        // Default to LIGHT mode if nothing saved
+        document.body.classList.remove("dark-mode");
+        localStorage.setItem("darkMode", "false");
+    } 
+    else if (savedTheme === "true") {
         document.body.classList.add("dark-mode");
+    } 
+    else {
+        document.body.classList.remove("dark-mode");
     }
 });
 
@@ -35,10 +47,8 @@ document.addEventListener("DOMContentLoaded", function () {
 function toggleDarkMode() {
     document.body.classList.toggle("dark-mode");
 
-    localStorage.setItem(
-        "darkMode",
-        document.body.classList.contains("dark-mode")
-    );
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("darkMode", isDark);
 }
 
 
