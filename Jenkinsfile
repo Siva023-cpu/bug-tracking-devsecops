@@ -3,8 +3,14 @@ pipeline {
 
     environment {
         IMAGE_NAME = "vasgrills/bugtracker-webapp"
-        IMAGE_TAG  = "latest"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        LATEST_TAG = "latest"
         CONTAINER_NAME = "bugtracker"
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -21,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Setup Virtual Environment & Install Dependencies') {
             steps {
                 sh '''
                 python3 -m venv venv
@@ -36,7 +42,7 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
-                flake8 app.py models.py || true
+                flake8 app
                 '''
             }
         }
@@ -45,7 +51,7 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
-                bandit -r app.py models.py || true
+                bandit -r app
                 '''
             }
         }
@@ -54,7 +60,8 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
-                pip-audit || true
+                pip install pip-audit
+                pip-audit
                 '''
             }
         }
@@ -63,16 +70,19 @@ pipeline {
             steps {
                 sh '''
                 docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:$LATEST_TAG
                 '''
             }
         }
 
-        stage('Docker Run (Test Container)') {
+        stage('Run Container (Smoke Test)') {
             steps {
                 sh '''
                 docker stop $CONTAINER_NAME || true
                 docker rm $CONTAINER_NAME || true
                 docker run -d -p 5000:5000 --name $CONTAINER_NAME $IMAGE_NAME:$IMAGE_TAG
+                sleep 10
+                curl -f http://localhost:5000 || exit 1
                 '''
             }
         }
@@ -95,6 +105,7 @@ pipeline {
             steps {
                 sh '''
                 docker push $IMAGE_NAME:$IMAGE_TAG
+                docker push $IMAGE_NAME:$LATEST_TAG
                 '''
             }
         }
@@ -102,16 +113,18 @@ pipeline {
 
     post {
         success {
-            echo "✅ DevSecOps CI/CD completed & Docker image pushed to Docker Hub"
+            echo "✅ DevSecOps Pipeline SUCCESS"
         }
         failure {
-            echo "❌ Pipeline failed"
+            echo "❌ Pipeline FAILED"
         }
         always {
             sh '''
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
+            docker logout || true
             '''
+            cleanWs()
         }
     }
 }
