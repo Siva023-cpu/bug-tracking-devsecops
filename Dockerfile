@@ -4,6 +4,9 @@ FROM python:3.11-slim
 # Step 2: Set working directory
 WORKDIR /app
 
+RUN mkdir -p /app/instance
+
+
 # Step 3: Copy requirements first (for caching)
 COPY requirements.txt .
 
