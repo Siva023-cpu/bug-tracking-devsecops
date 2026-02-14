@@ -86,19 +86,24 @@ pipeline {
             }
         }
 
-        stage('Run Container (Smoke Test)') {
+        stage('Smoke Test') {
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                docker run -d -p 5000:5000 --name $CONTAINER_NAME $IMAGE_NAME:$IMAGE_TAG
+                docker stop bugtracker || true
+                docker rm bugtracker || true
+
+                docker run -d \
+                --network bridge \
+                --name bugtracker \
+                vasgrills/bugtracker-webapp:${BUILD_NUMBER}
+
                 sleep 5
-                docker logs bugtracker
-                sleep 5
-                curl -f http://localhost:5000 || exit 1
+
+                curl -f http://bugtracker:5000 || exit 1
                 '''
             }
         }
+
 
         stage('Docker Hub Login') {
             steps {
