@@ -1,13 +1,22 @@
 import os
+import sys
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+# Base path for normal run and exe
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Create database folder automatically
+DB_FOLDER = os.path.join(BASE_DIR, "database")
+os.makedirs(DB_FOLDER, exist_ok=True)
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'bugtracker.db')}"
+        f"sqlite:///{os.path.join(DB_FOLDER, 'bugtracker.db')}"
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
