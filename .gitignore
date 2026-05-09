@@ -6,3 +6,61 @@ bugtracker.db
 .env
 .vscode/
 .env
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Flask Instance
+instance/
+
+# Environment Variables
+.env
+.env.*
+
+# Database Files
+*.db
+*.sqlite3
+
+# IDE Files
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build Files
+build/
+dist/
+*.egg-info/
+
+# Docker
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes Secrets
+secrets.yaml
+
+# Jenkins
+jenkins_home/
+
+# Misc
+*.swp
