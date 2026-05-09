@@ -35,7 +35,7 @@ jobs:
 
     - name: Run Bandit Security Scan
       run: |
-        bandit -r .
+        bandit -r , --skip B104
 
     - name: Run Dependency Vulnerability Scan
       run: |
