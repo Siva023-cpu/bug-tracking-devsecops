@@ -10,8 +10,6 @@ RUN mkdir -p /app/instance
 # Step 3: Copy requirements first (for caching)
 COPY requirements.txt .
 
-ENV MAIL_USERNAME=mssk6304445254@gmail.com
-ENV MAIL_PASSWORD=vnjuaxvyllatrdvm
 
 # Step 4: Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
