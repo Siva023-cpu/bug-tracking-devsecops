@@ -60,7 +60,7 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             db.session.rollback()
             flash("Registration failed. Try again.", "danger")
             return redirect(url_for("auth.register"))

@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template # redirect, url_for
+from flask import Blueprint, render_template   # redirect, url_for
 from flask_login import login_required, current_user
 from app.models import Bug, Notification
-#from app import db
+# from app import db
 
 main = Blueprint("main", __name__)
 
@@ -19,7 +19,7 @@ def home():
 @main.route("/dashboard")
 @login_required
 def dashboard():
-    #from app.models import Bug
+    # from app.models import Bug
     from flask import request
 
     page = request.args.get("page", 1, type=int)
