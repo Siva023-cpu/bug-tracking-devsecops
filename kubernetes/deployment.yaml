@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: bug-tracker-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: bug-tracker
+
+  template:
+    metadata:
+      labels:
+        app: bug-tracker
+
+    spec:
+      containers:
+      - name: bug-tracker-container
+        image: bug-tracker:latest
+
+        imagePullPolicy: Never
+
+        ports:
+        - containerPort: 5000
