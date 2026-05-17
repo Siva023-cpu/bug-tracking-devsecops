@@ -1,13 +1,32 @@
+# Python
 venv/
 __pycache__/
 *.pyc
-.git/
-.env
+
+# IDE
 .vscode/
 .idea/
+
+# Database
 *.db
 *.sqlite3
 instance/
-terraform/
+
+# Environment Variables
+.env
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# AWS Keys
+*.pem
+
+# Monitoring / Jenkins
 monitoring/
 jenkins_home/
+
+# Git
+.git/
