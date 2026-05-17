@@ -1,0 +1,39 @@
+- hosts: web
+  become: yes
+
+  tasks:
+
+    - name: Update apt packages
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Clone GitHub Repository
+      git:
+        repo: https://github.com/Siva023-cpu/bug-tracking-devsecops.git
+        dest: /home/ubuntu/login
+
+    - name: Build Docker Image
+      command: docker build -t bugtracker /home/ubuntu/login
+
+    - name: Remove Old Container
+      command: docker rm -f bugtracker-container
+      ignore_errors: yes
+
+    - name: Run Docker Container
+      command: docker run -d -p 5000:5000 --name bugtracker-container bugtracker
